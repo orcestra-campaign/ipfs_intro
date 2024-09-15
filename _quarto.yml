@@ -1,5 +1,3 @@
 project:
   type: website
-
-profile:
-  default: website
+  output-dir: public
