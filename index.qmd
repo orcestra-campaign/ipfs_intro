@@ -1,0 +1,200 @@
+---
+title: "IPFS @ ORCESTRA"
+format: 
+    revealjs:
+        transition: slide
+---
+
+# IPFS
+
+* filesystem
+* content addressed
+* p2p
+    * will search for nearby copies of data
+    * no central server
+* public
+
+## content addressed
+
+* every file, folder, etc... has a content identifier (CID)
+    * e.g.: `QmRpRyRX75cauJKMPSTHMrwJQpNCKLayQJScm29VMVZjkb`{style='font-size: .6em;'}
+    * or `bafybeibtwdweeyrgnjd2mh2aqihqwhdwwmkyyzgwm3r6p4kihhfgukhvba`{style='font-size: .6em;'}
+* the CID is a signature of the content
+    * if you access data using a CID, you will **always** get **exactly** the same result, if the data is somewhere
+    * (or no result if data is deleted everywhere)
+
+## naming
+
+it's possible to define names pointing to CIDs
+
+* e.g. `latest.orcestra-campaign.org`
+    * the pointer **can change** over time (point to a different CID)
+    * thus, data behind this name **can change** over time
+    * the name is **required** to **update** data or folders
+* we could have more names, currently we don't
+
+# prerequisites
+
+## IPFS node
+
+* running locally
+    * (or a **very** well connected computer)
+* connects to other peers
+* caches and / or keeps data
+* is a (local) gateway for other applications into IPFS
+
+## install
+
+* easiest way to run a local node on a laptop: [IPFS Desktop](https://docs.ipfs.tech/install/ipfs-desktop/)
+    * or on OSX: `brew install --cask ipfs`
+* for CLI tools: [IPFS CLI (kubo)](https://docs.ipfs.tech/install/command-line/#system-requirements)
+    * or on OSX: `brew install ipfs`
+
+(it's possible to run a node on *kubo* only, but slightly more complicated)
+
+## access in browser
+
+* web UI: [http://127.0.0.1:5001/webui](http://127.0.0.1:5001/webui)
+* by CID: [http://127.0.0.1:8080/ip**f**s/Qm...Zjkb/](http://127.0.0.1:8080/ipfs/QmRpRyRX75cauJKMPSTHMrwJQpNCKLayQJScm29VMVZjkb/)
+    * one **immutable** version
+* by name: [http://127.0.0.1:8080/ip**n**s/latest.orcestra-campaign.org/](http://127.0.0.1:8080/ipns/latest.orcestra-campaign.org/)
+    * always the **latest** version (changes over time)
+
+## more browser options
+
+* you *may* want to install [IPFS Companion](https://docs.ipfs.tech/install/ipfs-companion/) browser extension
+* `ipfs://<CID>` and `ipns://<name>` *may* work, but can be problematic with CIDv0 (`Qm...`) because of case-sensitivity
+    
+
+## `ipfsspec` for Python
+
+* enables resolution of `ipfs://` and `ipns://` links in common Python data packages
+* `pip install 'ipfsspec>=0.5.0'`
+
+# usage
+
+## browse current data:
+
+* [ipns://latest.orcestra-campaign.org](ipns://latest.orcestra-campaign.org)
+* [http://127.0.0.1:8080/ipns/latest.orcestra-campaign.org/](http://127.0.0.1:8080/ipns/latest.orcestra-campaign.org/)
+
+## Python
+
+CID access:
+
+```python
+import xarray as xr
+xr.open_dataset("ipfs://QmQ5GpT44Hnssi4DbXPK6Z9LnYjwh3ujEJ3KPjQ45Km3qF",
+                engine="zarr")
+```
+
+name access:
+```python
+xr.open_dataset("ipns://latest.orcestra-campaign.org/products/HALO/bahamas/ql/HALO-20240811a.zarr",
+                engine="zarr")
+```
+
+## command line access
+
+list directory
+
+```bash
+$ ipfs ls /ipns/latest.orcestra-campaign.org
+QmbgNR1ZosE2dNRbca5GdqScB8pVh6yGjgG2nD5C3WT1bM - products/
+QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn - raw/
+```
+
+:::{.fragment}
+read a file
+
+```bash
+$ ipfs cat /ipfs/QmQ5GpT44Hnssi4DbXPK6Z9LnYjwh3ujEJ3KPjQ45Km3qF/.zattrs
+{
+    "ProjectInvestigator": "Bjorn Stevens",
+    "TimeInterval": "11:59:34 - 20:35:59",
+...
+```
+:::
+
+:::{.fragment}
+resolve a name
+
+```bash
+$ ipfs resolve /ipns/latest.orcestra-campaign.org
+/ipfs/QmRpRyRX75cauJKMPSTHMrwJQpNCKLayQJScm29VMVZjkb
+```
+(the result may of course be different in future)
+:::
+
+## add things to IPFS
+
+```bash
+ipfs add -rH --raw-leaves <some file or folder>
+```
+
+* will return a CID, which can be used immediately by peers
+  * peers will load data **directly from your computer**
+* data is still **only** on your computer
+* the data is reachable by CID **for everyone**
+  * accessing it on the other side of the planet may be slow
+
+```
+$ ipfs add --help
+...
+  -r, --recursive            bool   - Add directory paths recursively.
+  -H, --hidden               bool   - Include files that are hidden.
+  --raw-leaves               bool   - Use raw blocks for leaf nodes.
+...
+```
+
+## pinning
+
+
+Pinning a CID means that you instruct your node to:
+
+* get all the referenced data
+* not to delete the referenced data locally
+
+Thus, if you want to keep some data on your machine, run
+
+```bash
+ipfs pin add <CID>
+```
+
+or 
+
+```bash
+ipfs pin add --progress <CID> --name <some name to remember>
+```
+
+* `--progress` shows some progress indicator
+* `--name`: a label for you, which shows up in `ipfs pin ls`
+
+## remote pinning
+
+To make data available for others, it's good to pin data on a machine wich is more constantly connected than a laptop.
+
+**for ORCESTRA**
+
+* [pinlist.yaml](https://github.com/orcestra-campaign/ipfs_tools/blob/main/pinlist.yaml) (just keep things)
+* [tree.yaml](https://github.com/orcestra-campaign/ipfs_tools/blob/main/tree.yaml) (add things to `latest.orcestra-campaign.org`)
+
+Those lists are observed by IPFS nodes here on the campaign and in Hamburg, which will eventually fetch the referenced content and keep it stored.
+
+## access on levante
+
+It's possible to access IPFS on `levante` at DKRZ.
+
+You don't have to run your own node, but you (currently have to create a file in your `$HOME`):
+
+```bash
+$ cat ~/.ipfs/gateway
+http://136.172.60.151:8080
+```
+
+If you have this file, `ipfsspec` and Python access should work.
+
+# see also
+
+* [Data on IPFS @ howto.eurec4a](https://howto.eurec4a.eu/data_on_ipfs.html)
+* [IPFS docs](https://docs.ipfs.tech/)
