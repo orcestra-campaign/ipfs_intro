@@ -48,7 +48,7 @@ it's possible to define names pointing to CIDs
 * easiest way to run a local node on a laptop: [IPFS Desktop](https://docs.ipfs.tech/install/ipfs-desktop/)
     * or on OSX: `brew install --cask ipfs`
 * for CLI tools: [IPFS CLI (kubo)](https://docs.ipfs.tech/install/command-line/#system-requirements)
-    * or on OSX: `brew install ipfs`
+    * or on OSX: `brew install --formula ipfs` (you may need to run `brew link ipfs`)
 
 (it's possible to run a node on *kubo* only, but slightly more complicated)
 
